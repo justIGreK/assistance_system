@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"gohelp/internal/models"
 	"log"
 	"net/http"
@@ -13,19 +14,28 @@ type Authorization interface {
 	LoginUser(ctx context.Context, email, password string) (string, error)
 }
 
+// @Summary SignUp
+// @Tags auth
+// @Description create account
+// @Accept  json
+// @Produce  json
+// @Param username query string true "your username"
+// @Param password query string true "your password"
+// @Param email query string true "your email"
+// @Router /users/register [post]
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
-	var u models.SignUp
-	log.Println("signUp func running")
-	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-		log.Println(r.Body)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
+	log.Println("signIn func running")
+	input := models.SignUp{
+		Username: r.URL.Query().Get("username"),
+		Email:    r.URL.Query().Get("email"),
+		Password: r.URL.Query().Get("password"),
 	}
-	if err := validate.Struct(u); err != nil {
+	fmt.Println(input)
+	if err := validate.Struct(input); err != nil {
 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	err := h.RegisterUser(r.Context(), u)
+	err := h.RegisterUser(r.Context(), input)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -34,18 +44,24 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	log.Println("signUp func ended")
 }
-
+// @Summary SignIn
+// @Tags auth
+// @Description create account
+// @Accept  json
+// @Produce  json
+// @Param email query string true "your email"
+// @Param password query string true "your password"
+// @Router /users/login [post]
 func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	log.Println("signIn func running")
-	var credentials models.LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
+	credentials := models.LoginRequest{
+		Email:    r.URL.Query().Get("email"),
+		Password: r.URL.Query().Get("password"),
 	}
 	if err := validate.Struct(credentials); err != nil {
-        http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
 	token, err := h.LoginUser(r.Context(), credentials.Email, credentials.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)

@@ -13,7 +13,15 @@ import (
 	"net/http"
 	"time"
 )
+// @title OverflowStack
+// @description Community Assistent System
 
+// @host localhost:8080
+// @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

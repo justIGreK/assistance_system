@@ -5,6 +5,9 @@ import (
 	"gohelp/internal/service/forum"
 
 	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "gohelp/docs"
 )
 
 type Handler struct {
@@ -18,6 +21,8 @@ func NewHandler(user *auth.UserService, forum *forum.ForumService) *Handler {
 
 func (h *Handler) InitRoutes() *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	r.Get("/discussions", h.GetDiscussionsWithCountOfComments)
 	r.Get("/search", h.SearchDiscussionsByName)

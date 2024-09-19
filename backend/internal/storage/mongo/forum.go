@@ -47,7 +47,6 @@ func (s *ForumStorage) GetDiscussion(ctx context.Context, id string) (*models.Di
 	if err != nil {
 		return nil, errors.New("invalid ID format")
 	}
-
 	var discussion models.Discussion
 	err = s.discussions.FindOne(ctx, bson.M{"_id": oid}).Decode(&discussion)
 	if err != nil {
@@ -57,7 +56,7 @@ func (s *ForumStorage) GetDiscussion(ctx context.Context, id string) (*models.Di
 	discussion.LikesCount = len(discussion.Likes)
 	discussion.DisikesCount = len(discussion.Dislikes)
 
-	fmt.Printf("discussion: %+v", discussion)
+	
 	return &discussion, nil
 }
 
@@ -99,7 +98,12 @@ func (s *ForumStorage) GetAllDiscussions(ctx context.Context) ([]models.Discussi
 
 func (s *ForumStorage) CreateComment(ctx context.Context, comment *models.Comment) (string, error) {
 	comment.CreatedAt = time.Now()
-
+	if comment.Likes == nil {
+		comment.Likes = []int{}
+	}
+	if comment.Dislikes == nil {
+		comment.Dislikes = []int{}
+	}
 	res, err := s.comments.InsertOne(ctx, comment)
 	if err != nil {
 		return "", err

@@ -1,0 +1,181 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: Community Assistent System
+  title: OverflowStack
+paths:
+  /discuss/comments:
+    post:
+      consumes:
+      - application/json
+      description: You can comment a discussion
+      parameters:
+      - description: Id of discussion
+        in: query
+        name: discussionID
+        required: true
+        type: string
+      - description: Your comment
+        in: query
+        name: content
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Comment discussion
+      tags:
+      - discussions
+  /discuss/discussions:
+    post:
+      consumes:
+      - application/json
+      description: You can post new discussion
+      parameters:
+      - description: Title of discussion
+        in: query
+        name: title
+        required: true
+        type: string
+      - description: Describe your problem here
+        in: query
+        name: content
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Create New Discussion
+      tags:
+      - discussions
+  /discuss/vote:
+    post:
+      consumes:
+      - application/json
+      description: Submit a vote with either "like" or "dislike"
+      parameters:
+      - description: Id of discussion or comment
+        in: query
+        name: ElementId
+        required: true
+        type: string
+      - description: The type of vote. Can be either 'like' or 'dislike'.
+        in: query
+        name: vote
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Submit a vote
+      tags:
+      - discussions
+  /discussions:
+    get:
+      consumes:
+      - application/json
+      description: Get all discussions on site
+      produces:
+      - application/json
+      responses: {}
+      summary: Get all discussions
+      tags:
+      - discussions
+  /getdiscussion:
+    get:
+      consumes:
+      - application/json
+      description: Get full display of discussion with comments
+      parameters:
+      - description: Id of discussion
+        in: query
+        name: discussion_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get full discussion
+      tags:
+      - discussions
+  /search:
+    get:
+      consumes:
+      - application/json
+      description: Get all discussions on site
+      parameters:
+      - description: Search term
+        in: query
+        name: discussionName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Get all discussions
+      tags:
+      - discussions
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: create account
+      parameters:
+      - description: your email
+        in: query
+        name: email
+        required: true
+        type: string
+      - description: your password
+        in: query
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: SignIn
+      tags:
+      - auth
+  /users/register:
+    post:
+      consumes:
+      - application/json
+      description: create account
+      parameters:
+      - description: your username
+        in: query
+        name: username
+        required: true
+        type: string
+      - description: your password
+        in: query
+        name: password
+        required: true
+        type: string
+      - description: your email
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: SignUp
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
