@@ -18,9 +18,10 @@ func NewHandler(user *auth.UserService, forum *forum.ForumService) *Handler {
 
 func (h *Handler) InitRoutes() *chi.Mux {
 	r := chi.NewRouter()
-	
-	r.Get("/discussions", h.GetDiscussionsWithComments)
+
+	r.Get("/discussions", h.GetDiscussionsWithCountOfComments)
 	r.Get("/search", h.SearchDiscussionsByName)
+	r.Get("/getdiscussion", h.GetDiscussionWithComments)
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/register", h.SignUp)
 		r.Post("/login", h.SignIn)
@@ -29,6 +30,7 @@ func (h *Handler) InitRoutes() *chi.Mux {
 		r.Use(h.AuthMiddleware)
 		r.Post("/discussions", h.CreateDiscussion)
 		r.Post("/comments", h.CreateComment)
+		r.Post("/vote", h.Vote)
 	})
 
 	return r

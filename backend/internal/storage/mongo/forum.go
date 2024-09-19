@@ -28,7 +28,12 @@ func NewForumStorage(db *mongo.Database) *ForumStorage {
 
 func (s *ForumStorage) CreateDiscussion(ctx context.Context, discussion *models.Discussion) (string, error) {
 	discussion.CreatedAt = time.Now()
-
+	if discussion.Likes == nil {
+		discussion.Likes = []int{}
+	}
+	if discussion.Dislikes == nil {
+		discussion.Dislikes = []int{}
+	}
 	res, err := s.discussions.InsertOne(ctx, discussion)
 	if err != nil {
 		return "", err
@@ -48,7 +53,30 @@ func (s *ForumStorage) GetDiscussion(ctx context.Context, id string) (*models.Di
 	if err != nil {
 		return nil, err
 	}
+
+	discussion.LikesCount = len(discussion.Likes)
+	discussion.DisikesCount = len(discussion.Dislikes)
+
+	fmt.Printf("discussion: %+v", discussion)
 	return &discussion, nil
+}
+
+func (s *ForumStorage) GetComment(ctx context.Context, id string) (*models.Comment, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
+	var comments models.Comment
+	err = s.comments.FindOne(ctx, bson.M{"_id": oid}).Decode(&comments)
+	if err != nil {
+		return nil, err
+	}
+
+	comments.LikesCount = len(comments.Likes)
+	comments.DisikesCount = len(comments.Dislikes)
+
+	return &comments, nil
 }
 
 func (s *ForumStorage) GetAllDiscussions(ctx context.Context) ([]models.DiscussionTopic, error) {
@@ -57,10 +85,14 @@ func (s *ForumStorage) GetAllDiscussions(ctx context.Context) ([]models.Discussi
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(ctx)
 
-	if err = cursor.All(context.TODO(), &discussions); err != nil {
+	if err = cursor.All(ctx, &discussions); err != nil {
 		return nil, err
+	}
+	for i := range discussions {
+		discussions[i].LikesCount = len(discussions[i].Likes)
+		discussions[i].DisikesCount = len(discussions[i].Dislikes)
 	}
 	return discussions, nil
 }
@@ -109,6 +141,10 @@ func (s *ForumStorage) GetCommentsByDiscussion(ctx context.Context, discussionID
 	if err = cursor.All(context.TODO(), &comments); err != nil {
 		return nil, err
 	}
+	for i := range comments {
+		comments[i].LikesCount = len(comments[i].Likes)
+		comments[i].DisikesCount = len(comments[i].Dislikes)
+	}
 	return comments, nil
 }
 
@@ -133,4 +169,84 @@ func (s *ForumStorage) SearchDiscussionsByName(ctx context.Context, searchTerm s
 	}
 
 	return discussions, nil
+}
+
+func (s *ForumStorage) RemoveVote(userID int, discussionID string, voteType string) error {
+	oid, err := primitive.ObjectIDFromHex(discussionID)
+	if err != nil {
+		return errors.New("invalid discussionID")
+	}
+	filter := bson.M{"_id": oid}
+	removeVote := bson.M{
+		"$pull": bson.M{
+			"likes":    userID,
+			"dislikes": userID,
+		},
+	}
+	_, err = s.discussions.UpdateOne(context.TODO(), filter, removeVote)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (s *ForumStorage) DiscAddVote(userID int, discussionID string, voteType string) error {
+	oid, err := primitive.ObjectIDFromHex(discussionID)
+	if err != nil {
+		return errors.New("invalid discussionID")
+	}
+	filter := bson.M{"_id": oid}
+	var update bson.M
+	if voteType == "like" {
+		fmt.Println("\nlike")
+		update = bson.M{
+			"$push": bson.M{
+				"likes": userID,
+			},
+		}
+	} else if voteType == "dislike" {
+		fmt.Println("dislike")
+		update = bson.M{
+			"$push": bson.M{
+				"dislikes": userID,
+			},
+		}
+	}
+
+	result, err := s.discussions.UpdateOne(context.TODO(), filter, update)
+	fmt.Println(result)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *ForumStorage) ComAddVote(userID int, commentID string, voteType string) error {
+	oid, err := primitive.ObjectIDFromHex(commentID)
+	if err != nil {
+		return errors.New("invalid discussionID")
+	}
+	filter := bson.M{"_id": oid}
+	var update bson.M
+	if voteType == "like" {
+		fmt.Println("\nlike")
+		update = bson.M{
+			"$push": bson.M{
+				"likes": userID,
+			},
+		}
+	} else if voteType == "dislike" {
+		fmt.Println("dislike")
+		update = bson.M{
+			"$push": bson.M{
+				"dislikes": userID,
+			},
+		}
+	}
+
+	result, err := s.comments.UpdateOne(context.TODO(), filter, update)
+	fmt.Println(result)
+	if err != nil {
+		return err
+	}
+	return nil
 }

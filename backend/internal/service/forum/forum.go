@@ -2,9 +2,11 @@ package forum
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"gohelp/internal/models"
 	"gohelp/internal/storage/mongo"
+	"log"
 )
 
 type ForumService struct {
@@ -29,7 +31,7 @@ func (s *ForumService) CreateComment(ctx context.Context, discussionID, content 
 	if err != nil {
 		return "", fmt.Errorf("error during creating comment: %v", err)
 	}
-	
+
 	comment := &models.Comment{
 		DiscussionID: discussionID,
 		Content:      content,
@@ -84,10 +86,58 @@ func (s *ForumService) GetAllDiscussionsWithCountOfComments(ctx context.Context)
 }
 
 func (s *ForumService) SearchDiscussionsByName(ctx context.Context, searchTerm string) ([]models.Discussion, error) {
-	
+
 	discussions, err := s.repo.SearchDiscussionsByName(ctx, searchTerm)
 	if err != nil {
 		return nil, fmt.Errorf("error during getting list of discussions ny name: %v", err)
 	}
 	return discussions, nil
+}
+
+func (s *ForumService) Vote(ctx context.Context, userID int, element_id, voteType string) error {
+	_, err1 := s.repo.GetDiscussion(ctx, element_id)
+	_, err2 := s.repo.GetComment(ctx, element_id)
+	if (err1 != nil && err2 != nil) || (err1 == nil && err2 == nil){
+		return errors.New("nothing was found or discussion with comment has equal ids")
+	}else if err1 == nil{
+		err := s.VoteDiscussion(ctx, userID, element_id, voteType)
+		if err != nil{
+			return err 
+		}
+		return nil
+	}else if err2 == nil{
+		err := s.VoteComment(ctx, userID, element_id, voteType)
+		if err != nil{
+			return err 
+		}
+		return nil
+	} 
+	log.Println("function was ended suspicious")
+	return nil
+}
+
+func (s *ForumService) VoteDiscussion(ctx context.Context, userID int, discussionID, voteType string) error {
+
+	err := s.repo.RemoveVote(userID, discussionID, voteType)
+	if err != nil {
+		return fmt.Errorf("error during removing votes: %v", err)
+	}
+	err = s.repo.DiscAddVote(userID, discussionID, voteType)
+	if err != nil {
+		return fmt.Errorf("error during adding vote: %v", err)
+	}
+	return nil
+}
+
+func (s *ForumService) VoteComment(ctx context.Context, userID int, commentID, voteType string) error {
+
+	err := s.repo.RemoveVote(userID, commentID, voteType)
+	if err != nil {
+		return fmt.Errorf("error during removing votes: %v", err)
+	}
+	err = s.repo.ComAddVote(userID, commentID, voteType)
+	if err != nil {
+		return fmt.Errorf("error during adding vote: %v", err)
+	}
+	return nil
 }

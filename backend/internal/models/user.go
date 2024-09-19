@@ -1,18 +1,18 @@
 package models
 
 type User struct {
-    ID           int    `json:"id"`
-    Username     string `json:"username" binding:"required,alphanum,min=6"`
-    Email        string `json:"email" binding:"required,min=6"`
-    Password     string `json:"password,omitempty" binding:"required,min=6"`
-    PasswordHash string `json:"-"`
+	ID           int    `json:"id"`
+	Username     string `json:"username" validate:"required,alphanum,min=6"`
+	Email        string `json:"email" validate:"required,min=6"`
+	Password     string `json:"password,omitempty" validate:"required,min=6"`
+	PasswordHash string `json:"-"`
 }
 type SignUp struct {
-    Username     string `json:"username" binding:"required,alphanum,min=6"`
-    Email        string `json:"email" binding:"required,min=6"`
-    Password     string `json:"password,omitempty" binding:"required,min=6"`
+	Username string `json:"username" validate:"required,alphanum,min=6"`
+	Email    string `json:"email" validate:"required,min=6"`
+	Password string `json:"password,omitempty" validate:"required,min=6"`
 }
 type LoginRequest struct {
-    Email    string `json:"email"`
-    Password string `json:"password"`
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
