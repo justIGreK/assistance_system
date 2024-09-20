@@ -48,7 +48,12 @@ func (s *ForumStorage) GetDiscussion(ctx context.Context, id string) (*models.Di
 		return nil, errors.New("invalid ID format")
 	}
 	var discussion models.Discussion
-	err = s.discussions.FindOne(ctx, bson.M{"_id": oid}).Decode(&discussion)
+	err = s.discussions.FindOne(ctx, bson.M{
+		"$and": []bson.M{
+			{"_id": oid},
+			{"deleted": false},
+		},
+	}).Decode(&discussion)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +61,6 @@ func (s *ForumStorage) GetDiscussion(ctx context.Context, id string) (*models.Di
 	discussion.LikesCount = len(discussion.Likes)
 	discussion.DisikesCount = len(discussion.Dislikes)
 
-	
 	return &discussion, nil
 }
 
@@ -67,7 +71,12 @@ func (s *ForumStorage) GetComment(ctx context.Context, id string) (*models.Comme
 	}
 
 	var comments models.Comment
-	err = s.comments.FindOne(ctx, bson.M{"_id": oid}).Decode(&comments)
+	err = s.comments.FindOne(ctx, bson.M{
+		"$and": []bson.M{
+			{"_id": oid},
+			{"deleted": false},
+		},
+	}).Decode(&comments)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +127,10 @@ func (s *ForumStorage) GetSummaryOfDiscussions(ctx context.Context, discussions 
 	for _, discussion := range discussions {
 		log.Println(discussion.ID)
 		count, err := s.comments.CountDocuments(context.TODO(), bson.M{
-			"discussion_id": discussion.ID,
+			"$and": []bson.M{
+				{"discussion_id": discussion.ID},
+				{"deleted": false},
+			},
 		})
 		if err != nil {
 			return nil, err
@@ -135,7 +147,10 @@ func (s *ForumStorage) GetSummaryOfDiscussions(ctx context.Context, discussions 
 func (s *ForumStorage) GetCommentsByDiscussion(ctx context.Context, discussionID string) ([]models.Comment, error) {
 	var comments []models.Comment
 	cursor, err := s.comments.Find(context.TODO(), bson.M{
-		"discussion_id": discussionID,
+		"$and": []bson.M{
+			{"discussion_id": discussionID},
+			{"deleted": false},
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -257,21 +272,21 @@ func (s *ForumStorage) ComAddVote(userID int, commentID string, voteType string)
 
 func (s *ForumStorage) UpdateDiscussion(ctx context.Context, discussionID, content string) error {
 	oid, err := primitive.ObjectIDFromHex(discussionID)
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    filter := bson.M{"_id": oid}
+	filter := bson.M{"_id": oid}
 
-    update := bson.M{
-        "$set": bson.M{
-            "content": content,
-            "edited":  true,
-        },
-    }
+	update := bson.M{
+		"$set": bson.M{
+			"content": content,
+			"edited":  true,
+		},
+	}
 
-    result, err := s.discussions.UpdateOne(ctx, filter, update)
-    if err != nil{
+	result, err := s.discussions.UpdateOne(ctx, filter, update)
+	if err != nil {
 		return err
 	}
 	log.Println(result)
@@ -279,24 +294,69 @@ func (s *ForumStorage) UpdateDiscussion(ctx context.Context, discussionID, conte
 	return nil
 }
 
-
 func (s *ForumStorage) UpdateComment(ctx context.Context, commentID, content string) error {
 	oid, err := primitive.ObjectIDFromHex(commentID)
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    filter := bson.M{"_id": oid}
+	filter := bson.M{"_id": oid}
 
-    update := bson.M{
-        "$set": bson.M{
-            "content": content,
-            "edited":  true,
-        },
-    }
+	update := bson.M{
+		"$set": bson.M{
+			"content": content,
+			"edited":  true,
+		},
+	}
 
-    result, err := s.comments.UpdateOne(ctx, filter, update)
-    if err != nil{
+	result, err := s.comments.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	log.Println(result)
+
+	return nil
+}
+
+func (s *ForumStorage) DeleteDiscussion(ctx context.Context, discussionID string) error {
+	oid, err := primitive.ObjectIDFromHex(discussionID)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": oid}
+
+	update := bson.M{
+		"$set": bson.M{
+			"deleted": true,
+		},
+	}
+
+	result, err := s.discussions.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	log.Println(result)
+
+	return nil
+}
+
+func (s *ForumStorage) DeleteComment(ctx context.Context, commentID string) error {
+	oid, err := primitive.ObjectIDFromHex(commentID)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": oid}
+
+	update := bson.M{
+		"$set": bson.M{
+			"deleted": true,
+		},
+	}
+
+	result, err := s.comments.UpdateOne(ctx, filter, update)
+	if err != nil {
 		return err
 	}
 	log.Println(result)

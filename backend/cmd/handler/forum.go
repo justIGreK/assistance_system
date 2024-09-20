@@ -21,6 +21,8 @@ type Forum interface {
 	Vote(ctx context.Context, userID int, discussionID, voteType string) error
 	UpdateDiscussion(ctx context.Context, discussionID, content string, authorID int) (*models.Discussion, error)
 	UpdateComment(ctx context.Context, commentID, content string, authorID int) (*models.Comment, error)
+	DeleteDiscussion(ctx context.Context, commentID string, authorID int) error 
+	DeleteComment(ctx context.Context, commentID string, authorID int) error 
 }
 
 var validate = validator.New()
@@ -49,7 +51,7 @@ func (h *Handler) CreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := util.ValidateTitle(request.Title); err !=nil{
+	if err := util.ValidateTitle(request.Title); err != nil {
 		http.Error(w, "Invalid title: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -236,7 +238,7 @@ func (h *Handler) UpdateDiscussion(w http.ResponseWriter, r *http.Request) {
 		Content      string `json:"content" validate:"max=70"`
 	}{
 		DiscussionID: r.URL.Query().Get("discussion_id"),
-		Content: r.URL.Query().Get("content"),
+		Content:      r.URL.Query().Get("content"),
 	}
 	if err := validate.Struct(request); err != nil {
 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
@@ -293,4 +295,58 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// // @Summary Update discussion
+// // @Security BearerAuth
+// // @Tags discussions
+// // @Accept  json
+// // @Produce  json
+// // @Param discussion_id query string true "Id of discussion"
+// // @Router /discuss/discussions/delete [delete]
+// func (h *Handler) DeleteDiscussion(w http.ResponseWriter, r *http.Request) {
+// 	AuthorID := r.Context().Value(UserIDKey).(int)
+// 	request := struct {
+// 		DiscussionID string `json:"discussion_id" validate:"required"`
+// 	}{
+// 		DiscussionID: r.URL.Query().Get("discussion_id"),
+// 	}
+// 	if err := validate.Struct(request); err != nil {
+// 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
+// 	err := h.Forum.DeleteDiscussion(r.Context(), request.DiscussionID, AuthorID)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	w.WriteHeader(http.StatusOK)
+// }
+
+// @Summary Delete comment
+// @Security BearerAuth
+// @Tags discussions
+// @Accept  json
+// @Produce  json
+// @Param comment_id query string true "Id of comment"
+// @Router /discuss/comments/delete [delete]
+func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
+	AuthorID := r.Context().Value(UserIDKey).(int)
+	request := struct {
+		CommentID string `json:"comment_id" validate:"required"`
+	}{
+		CommentID: r.URL.Query().Get("comment_id"),
+	}
+	if err := validate.Struct(request); err != nil {
+		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	err := h.Forum.DeleteComment(r.Context(), request.CommentID, AuthorID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

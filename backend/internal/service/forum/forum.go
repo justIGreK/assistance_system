@@ -145,10 +145,10 @@ func (s *ForumService) VoteComment(ctx context.Context, userID int, commentID, v
 func (s *ForumService) UpdateDiscussion(ctx context.Context, discussionID, content string, authorID int) (*models.Discussion, error) {
 
 	disc, err := s.repo.GetDiscussion(ctx, discussionID)
-	if err != nil{
-		return nil , fmt.Errorf("error during getting discussion: %v", err)
+	if err != nil {
+		return nil, fmt.Errorf("error during getting discussion: %v", err)
 	}
-	if disc.AuthorID != authorID{
+	if disc.AuthorID != authorID {
 		return nil, errors.New("you have no permissions to do this")
 	}
 	err = s.repo.UpdateDiscussion(ctx, discussionID, content)
@@ -156,8 +156,8 @@ func (s *ForumService) UpdateDiscussion(ctx context.Context, discussionID, conte
 		return nil, fmt.Errorf("error during updating discussion: %v", err)
 	}
 	disc, err = s.repo.GetDiscussion(ctx, discussionID)
-	if err != nil{
-		return nil , fmt.Errorf("error during getting discussion: %v", err)
+	if err != nil {
+		return nil, fmt.Errorf("error during getting discussion: %v", err)
 	}
 
 	return disc, nil
@@ -165,19 +165,52 @@ func (s *ForumService) UpdateDiscussion(ctx context.Context, discussionID, conte
 func (s *ForumService) UpdateComment(ctx context.Context, commentID, content string, authorID int) (*models.Comment, error) {
 
 	comm, err := s.repo.GetComment(ctx, commentID)
-	if err != nil{
-		return nil , fmt.Errorf("error during getting discussion: %v", err)
+	if err != nil {
+		return nil, fmt.Errorf("error during getting discussion: %v", err)
 	}
-	if comm.AuthorID != authorID{
+	if comm.AuthorID != authorID {
 		return nil, errors.New("you have no permissions to do this")
 	}
-	err = s.repo.UpdateComment(ctx, commentID, content)
+	err = s.repo.UpdateDiscussion(ctx, commentID, content)
 	if err != nil {
 		return nil, fmt.Errorf("error during updating discussion: %v", err)
 	}
 	comm, err = s.repo.GetComment(ctx, commentID)
-	if err != nil{
-		return nil , fmt.Errorf("error during getting discussion: %v", err)
+	if err != nil {
+		return nil, fmt.Errorf("error during getting discussion: %v", err)
 	}
 	return comm, nil
+}
+
+func (s *ForumService) DeleteDiscussion(ctx context.Context, discussionID string, authorID int) error {
+
+	disc, err := s.repo.GetDiscussion(ctx, discussionID)
+	if err != nil {
+		return  fmt.Errorf("error during getting discussion: %v", err)
+	}
+	if disc.AuthorID != authorID {
+		return errors.New("you have no permissions to do this")
+	}
+	err = s.repo.DeleteDiscussion(ctx, discussionID)
+	if err != nil {
+		return fmt.Errorf("error during updating discussion: %v", err)
+	}
+
+	return nil
+}
+func (s *ForumService) DeleteComment(ctx context.Context, commentID string, authorID int) error {
+
+	comm, err := s.repo.GetComment(ctx, commentID)
+	if err != nil {
+		return fmt.Errorf("error during getting discussion: %v", err)
+	}
+	if comm.AuthorID != authorID {
+		return errors.New("you have no permissions to do this")
+	}
+	err = s.repo.DeleteComment(ctx, commentID)
+	if err != nil {
+		return fmt.Errorf("error during updating discussion: %v", err)
+	}
+	
+	return nil
 }

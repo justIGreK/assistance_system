@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var validTitle = regexp.MustCompile(`(?i)^[\p{L}0-9]{3,}.*$`)
+var validTitle = regexp.MustCompile(`(?i)\b[a-zA-Z]{3,}\b`)
 
 func ValidateTitle(title string) error {
 	title = strings.TrimSpace(title)

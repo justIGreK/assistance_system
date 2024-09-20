@@ -29,6 +29,24 @@ paths:
       summary: Comment discussion
       tags:
       - discussions
+  /discuss/comments/delete:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Id of comment
+        in: query
+        name: comment_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Delete comment
+      tags:
+      - discussions
   /discuss/comments/edit:
     put:
       consumes:
@@ -74,6 +92,24 @@ paths:
       security:
       - BearerAuth: []
       summary: Create New Discussion
+      tags:
+      - discussions
+  /discuss/discussions/delete:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Id of discussion
+        in: query
+        name: discussion_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Update discussion
       tags:
       - discussions
   /discuss/discussions/edit:
