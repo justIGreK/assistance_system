@@ -52,6 +52,71 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/discuss/comments/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "discussions"
+                ],
+                "summary": "Delete comment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Id of comment",
+                        "name": "comment_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/discuss/comments/edit": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "discussions"
+                ],
+                "summary": "Update comment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Id of comment",
+                        "name": "comment_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "New content field",
+                        "name": "content",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/discuss/discussions": {
             "post": {
                 "security": [
@@ -89,6 +154,71 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/discuss/discussions/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "discussions"
+                ],
+                "summary": "Update discussion",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Id of discussion",
+                        "name": "discussion_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/discuss/discussions/edit": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "discussions"
+                ],
+                "summary": "Update discussion",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Id of discussion",
+                        "name": "discussion_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "New content field",
+                        "name": "content",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/discuss/vote": {
             "post": {
                 "security": [
@@ -116,6 +246,10 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "enum": [
+                            "like",
+                            "dislike"
+                        ],
                         "type": "string",
                         "description": "The type of vote. Can be either 'like' or 'dislike'.",
                         "name": "vote",
