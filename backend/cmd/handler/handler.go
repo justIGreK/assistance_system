@@ -36,6 +36,8 @@ func (h *Handler) InitRoutes() *chi.Mux {
 		r.Post("/discussions", h.CreateDiscussion)
 		r.Post("/comments", h.CreateComment)
 		r.Post("/vote", h.Vote)
+		r.Put("/discussions/edit", h.UpdateDiscussion)
+		r.Put("/comments/edit", h.UpdateComment)
 	})
 
 	return r

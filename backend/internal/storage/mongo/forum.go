@@ -254,3 +254,52 @@ func (s *ForumStorage) ComAddVote(userID int, commentID string, voteType string)
 	}
 	return nil
 }
+
+func (s *ForumStorage) UpdateDiscussion(ctx context.Context, discussionID, content string) error {
+	oid, err := primitive.ObjectIDFromHex(discussionID)
+    if err != nil {
+        return err
+    }
+
+    filter := bson.M{"_id": oid}
+
+    update := bson.M{
+        "$set": bson.M{
+            "content": content,
+            "edited":  true,
+        },
+    }
+
+    result, err := s.discussions.UpdateOne(ctx, filter, update)
+    if err != nil{
+		return err
+	}
+	log.Println(result)
+
+	return nil
+}
+
+
+func (s *ForumStorage) UpdateComment(ctx context.Context, commentID, content string) error {
+	oid, err := primitive.ObjectIDFromHex(commentID)
+    if err != nil {
+        return err
+    }
+
+    filter := bson.M{"_id": oid}
+
+    update := bson.M{
+        "$set": bson.M{
+            "content": content,
+            "edited":  true,
+        },
+    }
+
+    result, err := s.comments.UpdateOne(ctx, filter, update)
+    if err != nil{
+		return err
+	}
+	log.Println(result)
+
+	return nil
+}

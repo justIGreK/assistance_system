@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gohelp/internal/models"
+	"gohelp/util"
 	"log"
 	"net/http"
 
@@ -18,6 +19,8 @@ type Forum interface {
 	GetAllDiscussionsWithCountOfComments(ctx context.Context) ([]models.DiscussionWithCount, error)
 	SearchDiscussionsByName(ctx context.Context, searchTerm string) ([]models.Discussion, error)
 	Vote(ctx context.Context, userID int, discussionID, voteType string) error
+	UpdateDiscussion(ctx context.Context, discussionID, content string, authorID int) (*models.Discussion, error)
+	UpdateComment(ctx context.Context, commentID, content string, authorID int) (*models.Comment, error)
 }
 
 var validate = validator.New()
@@ -34,8 +37,8 @@ var validate = validator.New()
 func (h *Handler) CreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	log.Println("CreateDisc func running")
 	request := struct {
-		Title   string `json:"title" validate:"required"`
-		Content string `json:"content" validate:"required"`
+		Title   string `json:"title" validate:"required,max=35"`
+		Content string `json:"content" validate:"required,max=70"`
 	}{
 		Title:   r.URL.Query().Get("title"),
 		Content: r.URL.Query().Get("content"),
@@ -44,6 +47,10 @@ func (h *Handler) CreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	AuthorID := r.Context().Value(UserIDKey).(int)
 	if err := validate.Struct(request); err != nil {
 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := util.ValidateTitle(request.Title); err !=nil{
+		http.Error(w, "Invalid title: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -71,7 +78,7 @@ func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	log.Println("CreateCom func running")
 	request := struct {
 		DiscussionID string `json:"discussionID" validate:"required"`
-		Content      string `json:"content" validate:"required"`
+		Content      string `json:"content" validate:"required,max=70"`
 	}{
 		DiscussionID: r.URL.Query().Get("discussionID"),
 		Content:      r.URL.Query().Get("content"),
@@ -124,7 +131,7 @@ func (h *Handler) GetDiscussionsWithCountOfComments(w http.ResponseWriter, r *ht
 func (h *Handler) SearchDiscussionsByName(w http.ResponseWriter, r *http.Request) {
 	log.Println("SearchDiscByName func running")
 	request := struct {
-		DiscussionName string `json:"discussionName" validate:"required"`
+		DiscussionName string `json:"discussionName" validate:"required,max=35"`
 	}{
 		DiscussionName: r.URL.Query().Get("discussionName"),
 	}
@@ -154,7 +161,7 @@ func (h *Handler) SearchDiscussionsByName(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param ElementId query string true "Id of discussion or comment"
-// @Param vote query string true "The type of vote. Can be either 'like' or 'dislike'."
+// @Param vote query string true "The type of vote. Can be either 'like' or 'dislike'." Enums(like, dislike)
 // @Router /discuss/vote [post]
 func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	AuthorID := r.Context().Value(UserIDKey).(int)
@@ -212,5 +219,78 @@ func (h *Handler) GetDiscussionWithComments(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-	w.WriteHeader(http.StatusOK)
+}
+
+// @Summary Update discussion
+// @Security BearerAuth
+// @Tags discussions
+// @Accept  json
+// @Produce  json
+// @Param discussion_id query string true "Id of discussion"
+// @Param content query string true "New content field"
+// @Router /discuss/discussions/edit [put]
+func (h *Handler) UpdateDiscussion(w http.ResponseWriter, r *http.Request) {
+	AuthorID := r.Context().Value(UserIDKey).(int)
+	request := struct {
+		DiscussionID string `json:"discussion_id" validate:"required"`
+		Content      string `json:"content" validate:"max=70"`
+	}{
+		DiscussionID: r.URL.Query().Get("discussion_id"),
+		Content: r.URL.Query().Get("content"),
+	}
+	if err := validate.Struct(request); err != nil {
+		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	discussion, err := h.Forum.UpdateDiscussion(r.Context(), request.DiscussionID, request.Content, AuthorID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"Updated discussion": discussion,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// @Summary Update comment
+// @Security BearerAuth
+// @Tags discussions
+// @Accept  json
+// @Produce  json
+// @Param comment_id query string true "Id of comment"
+// @Param content query string true "New content field"
+// @Router /discuss/comments/edit [put]
+func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
+	AuthorID := r.Context().Value(UserIDKey).(int)
+	request := struct {
+		CommentID string `json:"comment_id" validate:"required"`
+		Content   string `json:"content" validate:"max=70"`
+	}{
+		CommentID: r.URL.Query().Get("comment_id"),
+		Content:   r.URL.Query().Get("content"),
+	}
+	if request.Content == "" {
+		http.Error(w, "Content field cant be empty", http.StatusBadRequest)
+		return
+	}
+	if err := validate.Struct(request); err != nil {
+		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	comment, err := h.Forum.UpdateComment(r.Context(), request.CommentID, request.Content, AuthorID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"Updated comment": comment,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }

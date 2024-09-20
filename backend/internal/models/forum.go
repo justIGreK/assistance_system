@@ -3,15 +3,16 @@ package models
 import "time"
 
 type Discussion struct {
-	ID           string   `json:"id" bson:"_id,omitempty"`
-	Title        string    `json:"title" bson:"content"`
-	Content      string    `json:"content" bson:"title"`
+	ID           string    `json:"id" bson:"_id,omitempty"`
+	Title        string    `json:"title" bson:"title"`
+	Content      string    `json:"content" bson:"content"`
 	AuthorID     int       `json:"author_id" bson:"author_id"`
 	CreatedAt    time.Time `json:"created_at" bson:"created_at"`
 	Likes        []int     `json:"-" bson:"likes"`
 	LikesCount   int       `json:"likes" bson:"-"`
 	Dislikes     []int     `json:"-" bson:"dislikes"`
 	DisikesCount int       `json:"dislikes" bson:"-"`
+	Edited       bool      `json:"edited" bson:"edited"`
 }
 
 type Comment struct {
@@ -24,6 +25,7 @@ type Comment struct {
 	LikesCount   int       `json:"likes" bson:"-"`
 	Dislikes     []int     `json:"-" bson:"dislikes"`
 	DisikesCount int       `json:"dislikes" bson:"-"`
+	Edited       bool      `json:"edited" bson:"edited"`
 }
 type DiscussionTopic struct {
 	ID           string `json:"id" bson:"_id,omitempty"`
