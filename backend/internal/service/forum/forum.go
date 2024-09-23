@@ -26,14 +26,24 @@ func (s *ForumService) CreateDiscussion(ctx context.Context, title, content stri
 	return s.repo.CreateDiscussion(ctx, discussion)
 }
 
-func (s *ForumService) CreateComment(ctx context.Context, discussionID, content string, authorID int) (string, error) {
-	_, err := s.repo.GetDiscussion(ctx, discussionID)
-	if err != nil {
-		return "", fmt.Errorf("error during creating comment: %v", err)
+func (s *ForumService) CreateComment(ctx context.Context, related_to, discussionID, content string, authorID int) (string, error) {
+	var err error
+	if _, err = s.repo.GetDiscussion(ctx, discussionID); err != nil {
+		return "", fmt.Errorf("error during searching related disc: %v", err)
+	}
+	if related_to != "" {
+		comment, err := s.repo.GetComment(ctx, related_to)
+		if err != nil {
+			return "", fmt.Errorf("error during searching related comment: %v", err)
+		}
+		if comment.DiscussionID != discussionID {
+			return "", fmt.Errorf("invalid related comment: %v", err)
+		}
 	}
 
 	comment := &models.Comment{
 		DiscussionID: discussionID,
+		RelatedTo:    related_to,
 		Content:      content,
 		AuthorID:     authorID,
 	}
@@ -50,29 +60,41 @@ func (s *ForumService) GetDiscussionWithComments(ctx context.Context, discussion
 	if err != nil {
 		return nil, nil, fmt.Errorf("error during getting comments of discussions: %v", err)
 	}
+	commentsTree := buildCommentTree(comments)
 
-	return discussion, comments, nil
+	return discussion, commentsTree, nil
 }
 
-// func (s *ForumService) GetAllDiscussions() ([]models.DiscussionWithCount, error) {
+func buildCommentTree(comments []models.Comment) []models.Comment {
 
-// 	var result []DiscussionWithCount
-// 	for _, discussion := range discussions {
-// 		count, err := commentsCollection.CountDocuments(context.TODO(), bson.M{
-// 			"discussionId": discussion.ID,
-// 		})
-// 		if err != nil {
-// 			return nil, err
-// 		}
+	tree := make(map[string][]models.Comment)
+	var rootComments []models.Comment
 
-// 		result = append(result, DiscussionWithCount{
-// 			Discussion:    discussion,
-// 			CommentsCount: count,
-// 		})
-// 	}
+	for _, comment := range comments {
+		if comment.Deleted {
+			comment.Content = "<deleted>"
+		}
+		parentID := ""
+		if comment.RelatedTo != "" {
+			parentID = comment.RelatedTo
+		}
+		tree[parentID] = append(tree[parentID], comment)
+	}
 
-//		return result, nil
-//	}
+	var addChildren func(string) []models.Comment
+	addChildren = func(parentID string) []models.Comment {
+		if children, ok := tree[parentID]; ok {
+			for i := range children {
+				children[i].Children = addChildren(children[i].ID)
+			}
+			return children
+		}
+		return nil
+	}
+
+	rootComments = addChildren("")
+	return rootComments
+}
 func (s *ForumService) GetAllDiscussionsWithCountOfComments(ctx context.Context) ([]models.DiscussionWithCount, error) {
 	discussions, err := s.repo.GetAllDiscussions(ctx)
 	if err != nil {
@@ -182,35 +204,33 @@ func (s *ForumService) UpdateComment(ctx context.Context, commentID, content str
 	return comm, nil
 }
 
-func (s *ForumService) DeleteDiscussion(ctx context.Context, discussionID string, authorID int) error {
-
-	disc, err := s.repo.GetDiscussion(ctx, discussionID)
+func (s *ForumService) DeleteFullDiscussion(ctx context.Context, discussionID string) error {
+	_, err := s.repo.GetDiscussion(ctx, discussionID)
 	if err != nil {
-		return  fmt.Errorf("error during getting discussion: %v", err)
+		return fmt.Errorf("error during getting discussion: %v", err)
 	}
-	if disc.AuthorID != authorID {
-		return errors.New("you have no permissions to do this")
-	}
-	err = s.repo.DeleteDiscussion(ctx, discussionID)
+	err = s.repo.DeleteFullDiscussion(ctx, discussionID)
 	if err != nil {
 		return fmt.Errorf("error during updating discussion: %v", err)
 	}
 
 	return nil
 }
-func (s *ForumService) DeleteComment(ctx context.Context, commentID string, authorID int) error {
+func (s *ForumService) DeleteComment(ctx context.Context, commentID, userRole string, authorID int) error {
 
 	comm, err := s.repo.GetComment(ctx, commentID)
 	if err != nil {
 		return fmt.Errorf("error during getting discussion: %v", err)
 	}
-	if comm.AuthorID != authorID {
-		return errors.New("you have no permissions to do this")
+	if  userRole == models.CustomerRole {
+		if comm.AuthorID != authorID {
+			return errors.New("you have no permissions to do this")
+		}
 	}
 	err = s.repo.DeleteComment(ctx, commentID)
 	if err != nil {
 		return fmt.Errorf("error during updating discussion: %v", err)
 	}
-	
+
 	return nil
 }

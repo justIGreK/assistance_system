@@ -24,7 +24,7 @@ type Authorization interface {
 // @Param email query string true "your email"
 // @Router /users/register [post]
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
-	log.Println("signIn func running")
+	log.Println("signUP func running")
 	input := models.SignUp{
 		Username: r.URL.Query().Get("username"),
 		Email:    r.URL.Query().Get("email"),
@@ -44,6 +44,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	log.Println("signUp func ended")
 }
+
 // @Summary SignIn
 // @Tags auth
 // @Description create account

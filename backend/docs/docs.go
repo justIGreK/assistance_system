@@ -36,7 +36,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Id of discussion",
+                        "description": "related content",
+                        "name": "related_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Id of element",
                         "name": "discussionID",
                         "in": "query",
                         "required": true

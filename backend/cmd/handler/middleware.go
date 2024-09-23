@@ -8,7 +8,10 @@ import (
 )
 
 type contextKey string
-const UserIDKey contextKey = "user_id"
+const( 
+	UserIDKey contextKey = "user_id"
+	UserRoleKey contextKey = "user_role"
+)
 
 func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,13 +27,14 @@ func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := auth.ValidatePasetoToken(token)
+		payload, err := auth.ValidatePasetoToken(token)
 		if err != nil {
 			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		ctx := context.WithValue(r.Context(), UserRoleKey, payload.Role)
+		ctx = context.WithValue(ctx, UserIDKey, payload.UserID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

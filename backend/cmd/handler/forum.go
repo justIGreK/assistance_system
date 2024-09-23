@@ -14,15 +14,15 @@ import (
 
 type Forum interface {
 	CreateDiscussion(ctx context.Context, title, content string, AuthorID int) (string, error)
-	CreateComment(ctx context.Context, discussionID, content string, AuthorID int) (string, error)
+	CreateComment(ctx context.Context, related_to, discussionID, content string, AuthorID int) (string, error)
 	GetDiscussionWithComments(ctx context.Context, discussionID string) (*models.Discussion, []models.Comment, error)
 	GetAllDiscussionsWithCountOfComments(ctx context.Context) ([]models.DiscussionWithCount, error)
 	SearchDiscussionsByName(ctx context.Context, searchTerm string) ([]models.Discussion, error)
 	Vote(ctx context.Context, userID int, discussionID, voteType string) error
 	UpdateDiscussion(ctx context.Context, discussionID, content string, authorID int) (*models.Discussion, error)
 	UpdateComment(ctx context.Context, commentID, content string, authorID int) (*models.Comment, error)
-	DeleteDiscussion(ctx context.Context, commentID string, authorID int) error 
-	DeleteComment(ctx context.Context, commentID string, authorID int) error 
+	DeleteFullDiscussion(ctx context.Context, commentID string) error
+	DeleteComment(ctx context.Context, commentID, userRole string, authorID int) error
 }
 
 var validate = validator.New()
@@ -73,15 +73,18 @@ func (h *Handler) CreateDiscussion(w http.ResponseWriter, r *http.Request) {
 // @Description You can comment a discussion
 // @Accept  json
 // @Produce  json
-// @Param discussionID query string true "Id of discussion"
+// @Param related_to query string false "related content"
+// @Param discussionID query string true "Id of element"
 // @Param content query string true "Your comment"
 // @Router /discuss/comments [post]
 func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	log.Println("CreateCom func running")
 	request := struct {
+		RelatedTo    string `json:"related_to"`
 		DiscussionID string `json:"discussionID" validate:"required"`
 		Content      string `json:"content" validate:"required,max=70"`
 	}{
+		RelatedTo:    r.URL.Query().Get("related_to"),
 		DiscussionID: r.URL.Query().Get("discussionID"),
 		Content:      r.URL.Query().Get("content"),
 	}
@@ -91,7 +94,7 @@ func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.Forum.CreateComment(r.Context(), request.DiscussionID, request.Content, AuthorID)
+	id, err := h.Forum.CreateComment(r.Context(), request.RelatedTo, request.DiscussionID, request.Content, AuthorID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -109,6 +112,7 @@ func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Router /discussions [get]
 func (h *Handler) GetDiscussionsWithCountOfComments(w http.ResponseWriter, r *http.Request) {
+
 	log.Println("GetDiscWithCom func running")
 	discussion, err := h.Forum.GetAllDiscussionsWithCountOfComments(r.Context())
 	if err != nil {
@@ -297,32 +301,36 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// // @Summary Update discussion
-// // @Security BearerAuth
-// // @Tags discussions
-// // @Accept  json
-// // @Produce  json
-// // @Param discussion_id query string true "Id of discussion"
-// // @Router /discuss/discussions/delete [delete]
-// func (h *Handler) DeleteDiscussion(w http.ResponseWriter, r *http.Request) {
-// 	AuthorID := r.Context().Value(UserIDKey).(int)
-// 	request := struct {
-// 		DiscussionID string `json:"discussion_id" validate:"required"`
-// 	}{
-// 		DiscussionID: r.URL.Query().Get("discussion_id"),
-// 	}
-// 	if err := validate.Struct(request); err != nil {
-// 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-// 	err := h.Forum.DeleteDiscussion(r.Context(), request.DiscussionID, AuthorID)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
+// @Summary Update discussion
+// @Security BearerAuth
+// @Tags discussions
+// @Accept  json
+// @Produce  json
+// @Param discussion_id query string true "Id of discussion"
+// @Router /discuss/discussions/delete [delete]
+func (h *Handler) DeleteDiscussion(w http.ResponseWriter, r *http.Request) {
+	user_role := r.Context().Value(UserRoleKey).(string)
+	if user_role != models.AdministrationRole{
+		http.Error(w, "you dont have permisions to do this", http.StatusInternalServerError)
+		return
+	}
+	request := struct {
+		DiscussionID string `json:"discussion_id" validate:"required"`
+	}{
+		DiscussionID: r.URL.Query().Get("discussion_id"),
+	}
+	if err := validate.Struct(request); err != nil {
+		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	err := h.Forum.DeleteFullDiscussion(r.Context(), request.DiscussionID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-// 	w.WriteHeader(http.StatusOK)
-// }
+	w.WriteHeader(http.StatusOK)
+}
 
 // @Summary Delete comment
 // @Security BearerAuth
@@ -333,6 +341,7 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 // @Router /discuss/comments/delete [delete]
 func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	AuthorID := r.Context().Value(UserIDKey).(int)
+	UserRole := r.Context().Value(UserRoleKey).(string)
 	request := struct {
 		CommentID string `json:"comment_id" validate:"required"`
 	}{
@@ -342,7 +351,7 @@ func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	err := h.Forum.DeleteComment(r.Context(), request.CommentID, AuthorID)
+	err := h.Forum.DeleteComment(r.Context(), request.CommentID, UserRole, AuthorID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

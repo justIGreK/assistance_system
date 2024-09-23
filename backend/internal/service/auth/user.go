@@ -52,7 +52,7 @@ func (s *UserService) LoginUser(ctx context.Context, email, password string) (st
 		return "", errors.New("invalid credentials")
 	}
 
-	token, err := GeneratePasetoToken(user.ID)
+	token, err := GeneratePasetoToken(user.ID, user.Role)
 	if err != nil {
 		return "", fmt.Errorf("error during generating token: %v", err)
 	}

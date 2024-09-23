@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("db is not connected")
 	}
 	forumdb := mongodb.Database("forum")
-	forumRepo := mongo.NewForumStorage(forumdb)
+	forumRepo := mongo.NewForumStorage(forumdb, mongodb)
 	userRepo := postgresql.NewUserRepository(db)
 	userService := auth.NewUserService(userRepo)
 	forumService := forum.NewForumService(forumRepo)
