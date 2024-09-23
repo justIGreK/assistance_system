@@ -11,7 +11,11 @@ paths:
       - application/json
       description: You can comment a discussion
       parameters:
-      - description: Id of discussion
+      - description: related content
+        in: query
+        name: related_to
+        type: string
+      - description: Id of element
         in: query
         name: discussionID
         required: true

@@ -17,12 +17,14 @@ import (
 type ForumStorage struct {
 	discussions *mongo.Collection
 	comments    *mongo.Collection
+	client      *mongo.Client
 }
 
-func NewForumStorage(db *mongo.Database) *ForumStorage {
+func NewForumStorage(db *mongo.Database, client *mongo.Client) *ForumStorage {
 	return &ForumStorage{
 		discussions: db.Collection("discussions"),
 		comments:    db.Collection("comments"),
+		client: client,
 	}
 }
 
@@ -34,6 +36,7 @@ func (s *ForumStorage) CreateDiscussion(ctx context.Context, discussion *models.
 	if discussion.Dislikes == nil {
 		discussion.Dislikes = []int{}
 	}
+	discussion.Deleted = false
 	res, err := s.discussions.InsertOne(ctx, discussion)
 	if err != nil {
 		return "", err
@@ -113,6 +116,8 @@ func (s *ForumStorage) CreateComment(ctx context.Context, comment *models.Commen
 	if comment.Dislikes == nil {
 		comment.Dislikes = []int{}
 	}
+	comment.Deleted = false
+	fmt.Println(comment)
 	res, err := s.comments.InsertOne(ctx, comment)
 	if err != nil {
 		return "", err
@@ -146,12 +151,7 @@ func (s *ForumStorage) GetSummaryOfDiscussions(ctx context.Context, discussions 
 
 func (s *ForumStorage) GetCommentsByDiscussion(ctx context.Context, discussionID string) ([]models.Comment, error) {
 	var comments []models.Comment
-	cursor, err := s.comments.Find(context.TODO(), bson.M{
-		"$and": []bson.M{
-			{"discussion_id": discussionID},
-			{"deleted": false},
-		},
-	})
+	cursor, err := s.comments.Find(context.TODO(), bson.M{"discussion_id": discussionID})
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +318,7 @@ func (s *ForumStorage) UpdateComment(ctx context.Context, commentID, content str
 	return nil
 }
 
-func (s *ForumStorage) DeleteDiscussion(ctx context.Context, discussionID string) error {
+func (s *ForumStorage) DeleteFullDiscussion(ctx context.Context, discussionID string) error {
 	oid, err := primitive.ObjectIDFromHex(discussionID)
 	if err != nil {
 		return err
@@ -331,12 +331,60 @@ func (s *ForumStorage) DeleteDiscussion(ctx context.Context, discussionID string
 			"deleted": true,
 		},
 	}
+	
 
 	result, err := s.discussions.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
 	log.Println(result)
+
+	filter = bson.M{"discussion_id": discussionID}
+
+	result, err = s.comments.UpdateMany(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	log.Println(result)
+
+
+	// session, err := s.client.StartSession()
+	// if err != nil {
+	// 	return err
+	// }
+	// defer session.EndSession(ctx)
+	// err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+	// 	if err := session.StartTransaction(); err != nil {
+	// 		return err
+	// 	}
+	// 	update := bson.M{
+	// 		"$set": bson.M{
+	// 			"deleted": true,
+	// 		},
+	// 	}
+	// 	_, err := s.discussions.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	// 	if err != nil {
+	// 		session.AbortTransaction(sc)
+	// 		return err
+	// 	}
+	// 	_, err = s.comments.UpdateMany(sc, bson.M{"discussion_id": oid}, update)
+	// 	if err != nil {
+	// 		session.AbortTransaction(sc)
+	// 		return err
+	// 	}
+
+	// 	if err := session.CommitTransaction(sc); err != nil {
+	// 		return err
+	// 	}
+
+	// 	return nil
+	// })
+
+	// if err != nil {
+	// 	log.Println("Transaction failed:", err)
+	// 	return err
+	// }
+
 
 	return nil
 }
