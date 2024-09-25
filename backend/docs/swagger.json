@@ -8,6 +8,77 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "create account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "SignIn",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "your email",
+                        "name": "email",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "your password",
+                        "name": "password",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "create account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "SignUp",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "your username",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "your password",
+                        "name": "password",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "your email",
+                        "name": "email",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/discuss/comments": {
             "post": {
                 "security": [
@@ -330,41 +401,13 @@
                 "responses": {}
             }
         },
-        "/users/login": {
-            "post": {
-                "description": "create account",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "SignIn",
-                "parameters": [
+        "/users/actions": {
+            "put": {
+                "security": [
                     {
-                        "type": "string",
-                        "description": "your email",
-                        "name": "email",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "your password",
-                        "name": "password",
-                        "in": "query",
-                        "required": true
+                        "BearerAuth": []
                     }
                 ],
-                "responses": {}
-            }
-        },
-        "/users/register": {
-            "post": {
-                "description": "create account",
                 "consumes": [
                     "application/json"
                 ],
@@ -372,28 +415,25 @@
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
-                "summary": "SignUp",
+                "summary": "Change status of user",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "your username",
-                        "name": "username",
+                        "description": "Id of User",
+                        "name": "user_id",
                         "in": "query",
                         "required": true
                     },
                     {
+                        "enum": [
+                            "ban",
+                            "unban"
+                        ],
                         "type": "string",
-                        "description": "your password",
-                        "name": "password",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "your email",
-                        "name": "email",
+                        "description": "The type of action. Can be either 'ban' or 'unban'.",
+                        "name": "action",
                         "in": "query",
                         "required": true
                     }

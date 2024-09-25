@@ -222,7 +222,7 @@ func (s *ForumService) DeleteComment(ctx context.Context, commentID, userRole st
 	if err != nil {
 		return fmt.Errorf("error during getting discussion: %v", err)
 	}
-	if  userRole == models.CustomerRole {
+	if userRole == models.CustomerRole {
 		if comm.AuthorID != authorID {
 			return errors.New("you have no permissions to do this")
 		}
@@ -233,4 +233,18 @@ func (s *ForumService) DeleteComment(ctx context.Context, commentID, userRole st
 	}
 
 	return nil
+}
+
+func (s *ForumService) DeleteFullHistory(ctx context.Context, userID int) error{
+	err := s.repo.DeleteAllComments(ctx, userID)
+	if err != nil {
+		return  fmt.Errorf("error during deleting comments: %v", err)
+	}
+
+	err = s.repo.DeleteAllDiscussions(ctx, userID)
+	if err != nil {
+		return  fmt.Errorf("error during deleting discussions: %v", err)
+	}
+	return nil
+
 }

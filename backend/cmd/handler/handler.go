@@ -11,12 +11,12 @@ import (
 )
 
 type Handler struct {
-	Authorization
+	Users
 	Forum
 }
 
 func NewHandler(user *auth.UserService, forum *forum.ForumService) *Handler {
-	return &Handler{Authorization: user, Forum: forum}
+	return &Handler{Users: user, Forum: forum}
 }
 
 func (h *Handler) InitRoutes() *chi.Mux {
@@ -27,9 +27,13 @@ func (h *Handler) InitRoutes() *chi.Mux {
 	r.Get("/discussions", h.GetDiscussionsWithCountOfComments)
 	r.Get("/search", h.SearchDiscussionsByName)
 	r.Get("/getdiscussion", h.GetDiscussionWithComments)
-	r.Route("/users", func(r chi.Router) {
+	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", h.SignUp)
 		r.Post("/login", h.SignIn)
+	})
+	r.Route("/users", func(r chi.Router) {
+		r.Use(h.AuthMiddleware)
+		r.Put("/actions", h.UsersActions)
 	})
 	r.Route("/discuss", func(r chi.Router) {
 		r.Use(h.AuthMiddleware)

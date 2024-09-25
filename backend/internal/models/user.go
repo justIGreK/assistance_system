@@ -7,6 +7,7 @@ type User struct {
 	Password     string `json:"password,omitempty" validate:"required,min=6"`
 	PasswordHash string `json:"-"`
 	Role         string `json:"role"`
+	Banned       bool   `json:"banned"`
 }
 type SignUp struct {
 	Username string `json:"username" validate:"required,min=6,max=15"`
