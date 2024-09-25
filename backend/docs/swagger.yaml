@@ -5,6 +5,55 @@ info:
   description: Community Assistent System
   title: OverflowStack
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: create account
+      parameters:
+      - description: your email
+        in: query
+        name: email
+        required: true
+        type: string
+      - description: your password
+        in: query
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: SignIn
+      tags:
+      - users
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: create account
+      parameters:
+      - description: your username
+        in: query
+        name: username
+        required: true
+        type: string
+      - description: your password
+        in: query
+        name: password
+        required: true
+        type: string
+      - description: your email
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: SignUp
+      tags:
+      - users
   /discuss/comments:
     post:
       consumes:
@@ -213,55 +262,32 @@ paths:
       summary: Get all discussions
       tags:
       - discussions
-  /users/login:
-    post:
+  /users/actions:
+    put:
       consumes:
       - application/json
-      description: create account
       parameters:
-      - description: your email
+      - description: Id of User
         in: query
-        name: email
+        name: user_id
         required: true
         type: string
-      - description: your password
+      - description: The type of action. Can be either 'ban' or 'unban'.
+        enum:
+        - ban
+        - unban
         in: query
-        name: password
+        name: action
         required: true
         type: string
       produces:
       - application/json
       responses: {}
-      summary: SignIn
+      security:
+      - BearerAuth: []
+      summary: Change status of user
       tags:
-      - auth
-  /users/register:
-    post:
-      consumes:
-      - application/json
-      description: create account
-      parameters:
-      - description: your username
-        in: query
-        name: username
-        required: true
-        type: string
-      - description: your password
-        in: query
-        name: password
-        required: true
-        type: string
-      - description: your email
-        in: query
-        name: email
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: SignUp
-      tags:
-      - auth
+      - users
 securityDefinitions:
   BearerAuth:
     in: header

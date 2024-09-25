@@ -92,7 +92,8 @@ func (s *ForumStorage) GetComment(ctx context.Context, id string) (*models.Comme
 
 func (s *ForumStorage) GetAllDiscussions(ctx context.Context) ([]models.DiscussionTopic, error) {
 	var discussions []models.DiscussionTopic
-	cursor, err := s.discussions.Find(context.TODO(), bson.M{})
+	filter := bson.M{"deleted": false}
+	cursor, err := s.discussions.Find(context.TODO(), filter)
 	if err != nil {
 		return nil, err
 	}
@@ -411,3 +412,41 @@ func (s *ForumStorage) DeleteComment(ctx context.Context, commentID string) erro
 
 	return nil
 }
+
+func (s *ForumStorage) DeleteAllComments(ctx context.Context, userID int) error {
+	filter := bson.M{"author_id": userID}
+
+	update := bson.M{
+		"$set": bson.M{
+			"deleted": true,
+		},
+	}
+
+	result, err := s.comments.UpdateMany(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	log.Println(result)
+	return nil
+}
+
+func (s *ForumStorage) DeleteAllDiscussions(ctx context.Context, userID int) error {
+	var discussions []models.DiscussionTopic
+	filter := bson.M{"author_id": userID}
+	cursor, err := s.discussions.Find(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+
+	if err = cursor.All(ctx, &discussions); err != nil {
+		return err
+	}
+	for _, discussion := range discussions {
+		s.DeleteFullDiscussion(ctx, discussion.ID)
+	}
+	
+	return nil
+}
+
+

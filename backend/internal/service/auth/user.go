@@ -12,7 +12,9 @@ import (
 
 type UserRepo interface {
 	CreateUser(ctx context.Context, user models.User) error
-	GetUserByEmail(ctx context.Context, email string) (models.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	GetUserById(ctx context.Context, userID int) (*models.User, error)
+	ChangeBanStatus(ctx context.Context, userID int, status bool) error
 }
 
 type UserService struct {
@@ -47,6 +49,10 @@ func (s *UserService) LoginUser(ctx context.Context, email, password string) (st
 		return "", errors.New("invalid credentials")
 	}
 
+	if user.Banned {
+		return "", errors.New("your account is banned")
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		return "", errors.New("invalid credentials")
@@ -58,4 +64,24 @@ func (s *UserService) LoginUser(ctx context.Context, email, password string) (st
 	}
 
 	return token, nil
+}
+
+func (s *UserService) UsersActions(ctx context.Context, userID int, action string) (*models.User, error) {
+	user, err := s.GetUserById(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error during getting user by id: %v", err)
+	}
+	var status bool
+	if action == "ban"{
+		status = true
+	}else {
+		status = false
+	}
+
+	err = s.ChangeBanStatus(ctx, userID, status)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

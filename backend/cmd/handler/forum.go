@@ -23,6 +23,7 @@ type Forum interface {
 	UpdateComment(ctx context.Context, commentID, content string, authorID int) (*models.Comment, error)
 	DeleteFullDiscussion(ctx context.Context, commentID string) error
 	DeleteComment(ctx context.Context, commentID, userRole string, authorID int) error
+	DeleteFullHistory(ctx context.Context, userID int) error
 }
 
 var validate = validator.New()
@@ -310,7 +311,7 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 // @Router /discuss/discussions/delete [delete]
 func (h *Handler) DeleteDiscussion(w http.ResponseWriter, r *http.Request) {
 	user_role := r.Context().Value(UserRoleKey).(string)
-	if user_role != models.AdministrationRole{
+	if user_role != models.AdministrationRole {
 		http.Error(w, "you dont have permisions to do this", http.StatusInternalServerError)
 		return
 	}
