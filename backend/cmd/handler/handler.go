@@ -30,6 +30,8 @@ func (h *Handler) InitRoutes() *chi.Mux {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", h.SignUp)
 		r.Post("/login", h.SignIn)
+		r.Get("/google", h.GoogleLogin)
+		r.Get("/google/callback", h.GoogleCallbackHandler)
 	})
 	r.Route("/users", func(r chi.Router) {
 		r.Use(h.AuthMiddleware)

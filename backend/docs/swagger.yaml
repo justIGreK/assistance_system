@@ -11,15 +11,21 @@ paths:
       - application/json
       description: create account
       parameters:
+      - description: Authorization method
+        enum:
+        - classic
+        - google
+        in: query
+        name: auth_method
+        required: true
+        type: string
       - description: your email
         in: query
         name: email
-        required: true
         type: string
       - description: your password
         in: query
         name: password
-        required: true
         type: string
       produces:
       - application/json

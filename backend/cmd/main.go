@@ -9,10 +9,12 @@ import (
 	"gohelp/internal/storage"
 	"gohelp/internal/storage/mongo"
 	"gohelp/internal/storage/postgresql"
+	"gohelp/pkg"
 	"log"
 	"net/http"
 	"time"
 )
+
 // @title OverflowStack
 // @description Community Assistent System
 
@@ -38,7 +40,7 @@ func main() {
 	userService := auth.NewUserService(userRepo)
 	forumService := forum.NewForumService(forumRepo)
 	userHandler := handler.NewHandler(userService, forumService)
-
+	pkg.InitOAuth()
 	log.Fatal(http.ListenAndServe(":8080", userHandler.InitRoutes()))
 
 }

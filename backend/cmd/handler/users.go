@@ -5,15 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"gohelp/internal/models"
+	"gohelp/pkg"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/markbates/goth"
 )
 
 type Users interface {
 	RegisterUser(ctx context.Context, user models.SignUp) error
 	LoginUser(ctx context.Context, email, password string) (string, error)
 	UsersActions(ctx context.Context, userID int, action string) (*models.User, error)
+	GoogleAuth(ctx context.Context, user goth.User) (string, error)
 }
 
 // @Summary SignUp
@@ -47,15 +51,26 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	log.Println("signUp func ended")
 }
 
+const (
+	googleMethod  = "google"
+	classicMethod = "classic"
+)
+
 // @Summary SignIn
 // @Tags users
 // @Description create account
 // @Accept  json
 // @Produce  json
-// @Param email query string true "your email"
-// @Param password query string true "your password"
+// @Param auth_method query string true "Authorization method" Enums(classic, google)
+// @Param email query string false "your email"
+// @Param password query string false "your password"
 // @Router /auth/login [post]
 func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
+	if authMethod := r.URL.Query().Get("auth_method"); authMethod != classicMethod {
+		response := fmt.Sprintf("For this action, please follow this link: http://localhost:8080/auth/%v", authMethod)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 	log.Println("signIn func running")
 	credentials := models.LoginRequest{
 		Email:    r.URL.Query().Get("email"),
@@ -74,6 +89,33 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(token)
 	log.Println("signIn func ended")
+}
+
+func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
+	pkg.StartGoogleOAuth(w, r)
+}
+
+func (h *Handler) GoogleCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := pkg.CompleteGoogleOAuth(w, r)
+	if err != nil {
+		http.Error(w, "Failed to authenticate with Google", http.StatusUnauthorized)
+		return
+	}
+	// fmt.Println("Email: " + user.Email +
+	// 	"\n Name: " + user.Name +
+	// 	"\n FirstName: " + user.FirstName +
+	// 	"\n LastName: " + user.LastName +
+	// 	"\n Description: " + user.Description +
+	// 	"\n UserID: " + user.UserID +
+	// 	"\n AvatarURL: " + user.AvatarURL +
+	// 	"\n Location: " + user.Location +
+	// 	"\n AccessToken: " + user.AccessToken)
+	token, err := h.GoogleAuth(r.Context(), user)
+	if err != nil{
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	json.NewEncoder(w).Encode(token)
 }
 
 // @Summary Change status of user

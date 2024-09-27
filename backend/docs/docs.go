@@ -30,18 +30,27 @@ const docTemplate = `{
                 "summary": "SignIn",
                 "parameters": [
                     {
+                        "enum": [
+                            "classic",
+                            "google"
+                        ],
                         "type": "string",
-                        "description": "your email",
-                        "name": "email",
+                        "description": "Authorization method",
+                        "name": "auth_method",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
+                        "description": "your email",
+                        "name": "email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "your password",
                         "name": "password",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {}
